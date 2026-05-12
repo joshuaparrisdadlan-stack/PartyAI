@@ -71,12 +71,12 @@ export default function PlayPage() {
 
   return (
     <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 md:grid-cols-[2fr_1fr]">
-      <section className="rounded border bg-white p-4">
+      <section className="rounded border border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
         <h1 className="text-2xl font-bold">PartyQuest — V0 Playtest</h1>
         <p className="mt-1 text-sm text-zinc-600">Scene: <b>{sceneId}</b> · Goal: {sceneGoal}</p>
         <p className="mt-1 text-xs text-zinc-500">Mode: {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}</p>
 
-        <div className="mt-4 h-[430px] overflow-y-auto rounded border bg-zinc-50 p-3 text-sm">
+        <div className="mt-4 h-[430px] overflow-y-auto rounded border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950">
           {history.map((line, i) => <p key={`${line}-${i}`} className="mb-2 whitespace-pre-wrap">{line}</p>)}
         </div>
 
@@ -85,7 +85,7 @@ export default function PlayPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendTurn()}
-            className="flex-1 rounded border px-3 py-2"
+            className="flex-1 rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
             placeholder="Try: I ask Mira about the courier / I attack"
           />
           <button onClick={sendTurn} disabled={busy} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
@@ -102,7 +102,7 @@ export default function PlayPage() {
         )}
       </section>
 
-      <aside className="rounded border bg-white p-4 text-sm">
+      <aside className="rounded border border-zinc-300 bg-white p-4 text-sm dark:border-zinc-700 dark:bg-zinc-900">
         <h2 className="font-semibold">Character</h2>
         {!state ? <p className="mt-2 text-zinc-600">No turn yet.</p> : (
           <>
