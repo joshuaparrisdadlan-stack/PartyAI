@@ -5,9 +5,14 @@ import type { GameState } from '@/lib/game/types';
 
 export type TurnResult = {
   ok: boolean;
+  mode: 'ai_director' | 'table_rules';
+  aiUsed: boolean;
+  fallbackUsed: boolean;
   sceneId: GameState['sceneId'];
   sceneGoal: string;
   sceneStarter?: string;
+  nextChoices: string[];
+  nextHook: string;
   narration: string;
   engineResults: Array<{ kind: string; summary: string; ok: boolean; breakdown?: unknown; critical?: boolean }>;
   state: {
@@ -24,7 +29,11 @@ export type TurnResult = {
   };
 };
 
-export function runTurn(state: GameState, rawTurn: unknown): { state: GameState; response: TurnResult } {
+export function runTurn(
+  state: GameState,
+  rawTurn: unknown,
+  context: { mode: 'ai_director' | 'table_rules'; aiUsed: boolean; fallbackUsed: boolean },
+): { state: GameState; response: TurnResult } {
   const prevScene = state.sceneId;
   const parsed = dmTurnSchema.safeParse(rawTurn);
   const fallback: DmTurn = {
@@ -45,14 +54,21 @@ export function runTurn(state: GameState, rawTurn: unknown): { state: GameState;
 
   const sceneData = oneShot.scenes[state.sceneId as keyof typeof oneShot.scenes];
   const sceneStarter = state.sceneId !== prevScene ? sceneData?.starter : undefined;
+  const nextChoices = choicesForScene(state.sceneId);
+  const nextHook = state.sceneId === 'ending' ? 'Your tale concludes at Brindlehook Inn.' : 'Choose your next action.';
 
   return {
     state,
     response: {
       ok: true,
+      mode: context.mode,
+      aiUsed: context.aiUsed,
+      fallbackUsed: context.fallbackUsed,
       sceneId: state.sceneId,
       sceneGoal: sceneData?.goal ?? 'Finish the adventure.',
       sceneStarter,
+      nextChoices,
+      nextHook,
       narration: turn.narration,
       engineResults,
       state: {
@@ -69,4 +85,17 @@ export function runTurn(state: GameState, rawTurn: unknown): { state: GameState;
       },
     },
   };
+}
+
+function choicesForScene(sceneId: GameState['sceneId']): string[] {
+  switch (sceneId) {
+    case 'social':
+      return ['Question Mira about the courier', 'Offer coin for information', 'Inspect the inn patrons'];
+    case 'exploration':
+      return ['Scout the boathouse approach', 'Search for hidden tracks', 'Call out to lure the ambushers'];
+    case 'combat':
+      return ['Strike the nearest ruffian', 'Use Second Wind', 'Hold position and watch for an opening'];
+    case 'ending':
+      return ['Review your recap', 'Start a fresh run'];
+  }
 }

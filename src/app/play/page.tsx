@@ -1,13 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 type TurnResponse = {
   ok: boolean;
   sessionId: string;
+  mode: 'ai_director' | 'table_rules';
   sceneId: string;
   sceneGoal: string;
   sceneStarter?: string;
+  nextChoices: string[];
+  nextHook: string;
   narration: string;
   engineResults: { kind: string; summary: string; ok: boolean }[];
   state: {
@@ -15,16 +18,19 @@ type TurnResponse = {
     monsters: { id: string; name: string; hp: number; maxHp: number; ac: number }[];
     log: string[];
   };
+  recap: { turnNumber: number };
 };
 
 export default function PlayPage() {
-  const sessionId = useMemo(() => `sess-${Math.random().toString(36).slice(2, 10)}`, []);
+  const [sessionId] = useState(() => `sess-${crypto.randomUUID().slice(0, 8)}`);
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<string[]>(['Welcome to PartyQuest.']);
   const [state, setState] = useState<TurnResponse['state'] | null>(null);
   const [sceneId, setSceneId] = useState('social');
   const [sceneGoal, setSceneGoal] = useState('Learn where the missing courier went.');
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<'ai_director' | 'table_rules'>('table_rules');
+  const [choices, setChoices] = useState<string[]>([]);
 
   async function sendTurn() {
     if (!input.trim() || busy) return;
@@ -45,15 +51,19 @@ export default function PlayPage() {
       setSceneId(data.sceneId);
       setSceneGoal(data.sceneGoal);
       setState(data.state);
+      setMode(data.mode);
+      setChoices(data.nextChoices);
 
       const lines = [
         ...(data.sceneStarter ? [`Scene shift: ${data.sceneStarter}`] : []),
         data.narration,
         ...data.engineResults.map((r) => `• ${r.summary}`),
+        `Recap saved (turn ${data.recap.turnNumber}).`,
+        data.nextHook,
       ];
       setHistory((h) => [...h, ...lines]);
-    } catch (err) {
-      setHistory((h) => [...h, `Error: ${(err as Error).message}`]);
+    } catch {
+      setHistory((h) => [...h, 'The guide pauses, then resumes. Try that action again.']);
     } finally {
       setBusy(false);
     }
@@ -64,6 +74,7 @@ export default function PlayPage() {
       <section className="rounded border bg-white p-4">
         <h1 className="text-2xl font-bold">PartyQuest — V0 Playtest</h1>
         <p className="mt-1 text-sm text-zinc-600">Scene: <b>{sceneId}</b> · Goal: {sceneGoal}</p>
+        <p className="mt-1 text-xs text-zinc-500">Mode: {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}</p>
 
         <div className="mt-4 h-[430px] overflow-y-auto rounded border bg-zinc-50 p-3 text-sm">
           {history.map((line, i) => <p key={`${line}-${i}`} className="mb-2 whitespace-pre-wrap">{line}</p>)}
@@ -81,6 +92,14 @@ export default function PlayPage() {
             {busy ? '...' : 'Send'}
           </button>
         </div>
+        {choices.length > 0 && (
+          <div className="mt-3 text-xs text-zinc-600">
+            <p className="font-semibold">Suggested actions</p>
+            <ul className="ml-4 list-disc">
+              {choices.map((c) => <li key={c}>{c}</li>)}
+            </ul>
+          </div>
+        )}
       </section>
 
       <aside className="rounded border bg-white p-4 text-sm">
