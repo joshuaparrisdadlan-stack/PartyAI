@@ -41,16 +41,37 @@ export function resolveEngineRequest(state: GameState, request: EngineRequest): 
       };
     }
     case 'monster_turn': {
-      const attacker = state.monsters.find((m) => m.hp > 0);
-      if (!attacker) return { state, result: { ok: true, summary: 'No monsters remain.' } };
-      const toHit = rollFormula('1d20', attacker.attackBonus);
-      if (toHit.total < state.player.ac) {
-        return { state: appendLog(state, `${attacker.name} missed.`), result: { ok: false, summary: `${attacker.name} missed.`, breakdown: toHit } };
+      const attackers = state.monsters.filter((m) => m.hp > 0);
+      if (attackers.length === 0) return { state, result: { ok: true, summary: 'No monsters remain.' } };
+      
+      let currentState = state;
+      const summaries: string[] = [];
+      const breakdowns: RollBreakdown[] = [];
+      
+      for (const attacker of attackers) {
+        if (currentState.player.hp <= 0) break;
+        const toHit = rollFormula('1d20', attacker.attackBonus);
+        if (toHit.total < currentState.player.ac) {
+          currentState = appendLog(currentState, `${attacker.name} missed.`);
+          summaries.push(`${attacker.name} missed.`);
+        } else {
+          const dmg = rollFormula('1d6', 1);
+          const hp = Math.max(0, currentState.player.hp - dmg.total);
+          currentState = { ...currentState, player: { ...currentState.player, hp } };
+          currentState = appendLog(currentState, `${attacker.name} hit for ${dmg.total}.`);
+          summaries.push(`${attacker.name} hit for ${dmg.total}.`);
+          breakdowns.push(dmg);
+        }
       }
-      const dmg = rollFormula('1d6', 1);
-      const hp = Math.max(0, state.player.hp - dmg.total);
-      const next = { ...state, player: { ...state.player, hp } };
-      return { state: appendLog(next, `${attacker.name} hit for ${dmg.total}.`), result: { ok: true, summary: `${attacker.name} hit you.`, breakdown: dmg } };
+      
+      return { 
+        state: currentState, 
+        result: { 
+          ok: true, 
+          summary: summaries.join(' '), 
+          breakdown: breakdowns[0] // just passing the first for UI simplicity
+        } 
+      };
     }
     case 'use_feature': {
       const idx = state.player.features.findIndex((f) => f.id === request.featureId);

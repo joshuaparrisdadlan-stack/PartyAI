@@ -16,5 +16,10 @@ export const oneShot = {
       goal: 'Defeat the ruffians and recover the courier satchel.',
       starter: 'Two ruffians step from behind stacked nets, blades drawn. "Coin or blood," one growls.',
     },
+    ending: {
+      id: 'ending',
+      goal: 'You have recovered the satchel and solved the mystery.',
+      starter: 'With the ruffians defeated, you recover the satchel. The missing courier is nowhere to be found, but you have survived the night.',
+    },
   },
 } as const;

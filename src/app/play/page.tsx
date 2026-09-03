@@ -55,15 +55,25 @@ export default function PlayPage() {
       setChoices(data.nextChoices);
 
       const lines = [
-        ...(data.sceneStarter ? [`Scene shift: ${data.sceneStarter}`] : []),
-        data.narration,
-        ...data.engineResults.map((r) => `• ${r.summary}`),
-        `Recap saved (turn ${data.recap.turnNumber}).`,
-        data.nextHook,
+        ...(data.sceneStarter ? [`\n--- SCENE: ${data.sceneStarter} ---`] : []),
+        `\nDM: ${data.narration}`
       ];
+      
+      for (const r of data.engineResults) {
+        if (r.breakdown) {
+          const bd = r.breakdown as any;
+          const rollStr = `[DICE] ${bd.formula}: rolled [${bd.rolls.join(', ')}] + ${bd.modifier} = ${bd.total}`;
+          lines.push(`🎲 ${rollStr}`);
+          if (r.critical) lines.push(`⭐ CRITICAL HIT!`);
+        }
+        lines.push(`⚙️ ${r.summary}`);
+      }
+
+      lines.push(`\n${data.nextHook}`);
+      
       setHistory((h) => [...h, ...lines]);
     } catch {
-      setHistory((h) => [...h, 'The guide pauses, then resumes. Try that action again.']);
+      setHistory((h) => [...h, '\nDM: The guide pauses, then resumes. Try that action again.']);
     } finally {
       setBusy(false);
     }
