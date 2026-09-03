@@ -19,7 +19,7 @@ export const oneShot = {
     ending: {
       id: 'ending',
       goal: 'You have recovered the satchel and solved the mystery.',
-      starter: 'With the ruffians defeated, you recover the satchel. The missing courier is nowhere to be found, but you have survived the night.',
+      starter: 'With the ruffians defeated, you recover the water-logged satchel from the mud. The missing courier is nowhere to be found, but you have secured the parcel and survived the night. This concludes the V0 vertical slice of PartyQuest.',
     },
   },
 } as const;

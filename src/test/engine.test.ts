@@ -1,9 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeAll, afterAll } from 'vitest';
 import { createInitialState } from '@/lib/game/state';
 import { resolveEngineRequest } from '@/lib/engine';
 import { runTurn } from '@/lib/orchestrator/run-turn';
 
 describe('engine combat and initiative', () => {
+  beforeAll(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99); // Nat 20s for deterministic testing
+  });
+
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
   it('starts combat and sorts combatants by initiative (player wins on tie)', () => {
     const state = createInitialState('t1');
     const out = resolveEngineRequest(state, { kind: 'start_combat' });

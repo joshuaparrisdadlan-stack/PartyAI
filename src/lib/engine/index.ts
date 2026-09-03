@@ -8,7 +8,8 @@ export function resolveEngineRequest(state: GameState, request: EngineRequest): 
       const mod = state.player.skills[request.skill] ?? 0;
       const breakdown = rollFormula('1d20', mod);
       const ok = breakdown.total >= request.dc;
-      const next = ok && state.sceneId !== 'combat' ? advanceScene(state) : state;
+      // In V0, we advance the scene regardless of success so the player isn't soft-locked.
+      const next = state.sceneId !== 'combat' ? advanceScene(state) : state;
       return {
         state: appendLog(next, `${request.skill} check ${ok ? 'passed' : 'failed'} (${breakdown.total} vs DC ${request.dc})`),
         result: { ok, summary: `${request.reason}: ${ok ? 'success' : 'failure'}`, breakdown },

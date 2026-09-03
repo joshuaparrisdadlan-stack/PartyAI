@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 type TurnResponse = {
   ok: boolean;
@@ -32,6 +32,13 @@ export default function PlayPage() {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<'ai_director' | 'table_rules'>('table_rules');
   const [choices, setChoices] = useState<string[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [history]);
 
   async function sendTurn() {
     if (!input.trim() || busy) return;
@@ -56,7 +63,6 @@ export default function PlayPage() {
       setChoices(data.nextChoices);
 
       const lines = [
-        ...(data.sceneStarter ? [`\n--- SCENE: ${data.sceneStarter} ---`] : []),
         `\nDM: ${data.narration}`
       ];
       
@@ -68,6 +74,10 @@ export default function PlayPage() {
           if (r.critical) lines.push(`⭐ CRITICAL HIT!`);
         }
         lines.push(`⚙️ ${r.summary}`);
+      }
+
+      if (data.sceneStarter) {
+        lines.push(`\n--- SCENE: ${data.sceneStarter} ---`);
       }
 
       lines.push(`\n${data.nextHook}`);
@@ -87,7 +97,7 @@ export default function PlayPage() {
         <p className="mt-1 text-sm text-zinc-600">Scene: <b>{sceneId}</b> · Goal: {sceneGoal}</p>
         <p className="mt-1 text-xs text-zinc-500">Mode: {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}</p>
 
-        <div className="mt-4 h-[430px] overflow-y-auto rounded border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950">
+        <div ref={scrollRef} className="mt-4 h-[430px] overflow-y-auto rounded border border-zinc-200 bg-zinc-50 p-3 pb-8 text-sm dark:border-zinc-700 dark:bg-zinc-950 scroll-smooth">
           {history.map((line, i) => <p key={`${line}-${i}`} className="mb-2 whitespace-pre-wrap">{line}</p>)}
         </div>
 
