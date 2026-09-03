@@ -80,8 +80,6 @@ export default function PlayPage() {
         lines.push(`\n--- SCENE: ${data.sceneStarter} ---`);
       }
 
-      lines.push(`\n${data.nextHook}`);
-      
       setHistory((h) => [...h, ...lines]);
     } catch {
       setHistory((h) => [...h, '\nDM: The guide pauses, then resumes. Try that action again.']);
@@ -91,79 +89,75 @@ export default function PlayPage() {
   }
 
   return (
-    <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 p-6 md:grid-cols-[2fr_1fr]">
-      <section className="rounded border border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
-        <h1 className="text-2xl font-bold">PartyQuest — V0 Playtest</h1>
-        <p className="mt-1 text-sm text-zinc-600">Scene: <b>{sceneId}</b> · Goal: {sceneGoal}</p>
-        <p className="mt-1 text-xs text-zinc-500">Mode: {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}</p>
+    <main className="mx-auto max-w-3xl p-4 md:p-8">
+      <header className="mb-8 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+        <h1 className="text-3xl font-serif tracking-tight text-zinc-900 dark:text-zinc-100">PartyQuest</h1>
+        <p className="mt-1 text-sm italic text-zinc-500">The Last Lantern at Brindlehook Inn</p>
+      </header>
 
-        <div ref={scrollRef} className="mt-4 h-[430px] overflow-y-auto rounded border border-zinc-200 bg-zinc-50 p-3 pb-8 text-sm dark:border-zinc-700 dark:bg-zinc-950 scroll-smooth">
-          {history.map((line, i) => <p key={`${line}-${i}`} className="mb-2 whitespace-pre-wrap">{line}</p>)}
-        </div>
-
-        <div className="mt-3 flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && sendTurn()}
-            className="flex-1 rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="Try: I ask Mira about the courier / I attack"
-          />
-          <button onClick={sendTurn} disabled={busy} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-            {busy ? '...' : 'Send'}
-          </button>
-        </div>
-        {choices.length > 0 && (
-          <div className="mt-3 text-xs text-zinc-600">
-            <p className="font-semibold">Suggested actions</p>
-            <ul className="ml-4 list-disc">
-              {choices.map((c) => <li key={c}>{c}</li>)}
-            </ul>
+      {state && (
+        <details className="mb-6 rounded border border-zinc-200 bg-white p-3 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <summary className="cursor-pointer font-semibold select-none">
+            {state.player.name} (HP: {state.player.hp}/{state.player.maxHp} | AC: {state.player.ac})
+          </summary>
+          <div className="mt-3 grid grid-cols-2 gap-4 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+            <div>
+              <p className="font-semibold text-zinc-700 dark:text-zinc-300">Features</p>
+              {state.player.features.map((f) => <p key={f.id} className="text-zinc-600 dark:text-zinc-400">{f.name}: {f.usesRemaining} use(s)</p>)}
+            </div>
           </div>
-        )}
-      </section>
+        </details>
+      )}
 
-      <aside className="rounded border border-zinc-300 bg-white p-4 text-sm dark:border-zinc-700 dark:bg-zinc-900">
-        <h2 className="font-semibold">Character</h2>
-        {!state ? <p className="mt-2 text-zinc-600">No turn yet.</p> : (
-          <>
-            <p className="mt-2 font-bold">{state.player.name}</p>
-            <p>HP: {state.player.hp}/{state.player.maxHp}</p>
-            <p>AC: {state.player.ac}</p>
-            <p className="mt-2 font-semibold">Features</p>
-            {state.player.features.map((f) => <p key={f.id}>{f.name}: {f.usesRemaining} use(s)</p>)}
-            
-            {state.combat?.active ? (
-              <div className="mt-4 rounded bg-zinc-100 p-2 dark:bg-zinc-800">
-                <p className="font-bold">Combat — Round {state.combat.round}</p>
-                <div className="mt-2 flex flex-col gap-1">
-                  {state.combat.initiative.map((init, idx) => {
-                    const isTurn = idx === state.combat.turnIndex;
-                    const name = init.actorId === state.player.id 
-                      ? state.player.name 
-                      : state.monsters.find(m => m.id === init.actorId)?.name || 'Unknown';
-                    const hp = init.actorId === state.player.id
-                      ? state.player.hp
-                      : state.monsters.find(m => m.id === init.actorId)?.hp || 0;
-                    
-                    return (
-                      <div key={init.actorId} className={`flex items-center gap-2 ${isTurn ? 'font-bold text-blue-600 dark:text-blue-400' : hp <= 0 ? 'opacity-50 line-through' : ''}`}>
-                        <span className="w-4">{isTurn ? '→' : ''}</span>
-                        <span>{name} ({init.roll})</span>
-                      </div>
-                    );
-                  })}
+      {state?.combat?.active && (
+        <div className="mb-6 rounded border border-red-200 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-950/20">
+          <p className="font-bold text-red-800 dark:text-red-400">Combat — Round {state.combat.round}</p>
+          <div className="mt-3 flex flex-col gap-2">
+            {state.combat.initiative.map((init, idx) => {
+              const isTurn = idx === state.combat.turnIndex;
+              const name = init.actorId === state.player.id 
+                ? state.player.name 
+                : state.monsters.find(m => m.id === init.actorId)?.name || 'Unknown';
+              const hp = init.actorId === state.player.id
+                ? state.player.hp
+                : state.monsters.find(m => m.id === init.actorId)?.hp || 0;
+              
+              return (
+                <div key={init.actorId} className={`flex items-center gap-3 text-sm ${isTurn ? 'font-bold text-blue-700 dark:text-blue-400' : hp <= 0 ? 'opacity-40 line-through' : 'text-zinc-800 dark:text-zinc-300'}`}>
+                  <span className="w-4 text-center">{isTurn ? '▶' : ''}</span>
+                  <span className="w-8 text-right font-mono text-xs text-zinc-500">{init.roll}</span>
+                  <span>{name}</span>
+                  <span className="ml-auto font-mono text-xs opacity-75">{hp} HP</span>
                 </div>
-              </div>
-            ) : (
-              <>
-                <p className="mt-3 font-semibold">Enemies</p>
-                {state.monsters.map((m) => <p key={m.id}>{m.name}: {m.hp}/{m.maxHp} HP</p>)}
-              </>
-            )}
-          </>
-        )}
-      </aside>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div ref={scrollRef} className="h-[50vh] min-h-[400px] overflow-y-auto p-5 pb-8 text-[15px] leading-relaxed text-zinc-800 dark:text-zinc-300 scroll-smooth">
+          {history.map((line, i) => (
+            <p key={`${line}-${i}`} className="mb-4 whitespace-pre-wrap">{line}</p>
+          ))}
+        </div>
+
+        <div className="border-t border-zinc-200 p-3 dark:border-zinc-800">
+          <div className="flex gap-2">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendTurn()}
+              className="flex-1 rounded-md border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm outline-none focus:border-zinc-400 focus:bg-white dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-600"
+              placeholder="What do you do?"
+              autoFocus
+            />
+            <button onClick={sendTurn} disabled={busy} className="rounded-md bg-zinc-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+              {busy ? '...' : 'Send'}
+            </button>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

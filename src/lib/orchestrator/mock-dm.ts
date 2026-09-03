@@ -4,15 +4,53 @@ import type { GameState } from '@/lib/game/types';
 export function deriveDmTurnFromInput(state: GameState, playerInput: string): DmTurn {
   const input = playerInput.toLowerCase();
 
-  // Common intents
   const wantsLook = input.includes('look') || input.includes('inspect') || input.includes('see') || input.includes('search');
-  const wantsTalk = input.includes('who') || input.includes('ask') || input.includes('talk') || input.includes('speak') || input.includes('buy');
-  const wantsMove = input.includes('go') || input.includes('sneak') || input.includes('walk') || input.includes('approach') || input.includes('follow');
+  const wantsTalk = input.includes('who') || input.includes('ask') || input.includes('talk') || input.includes('speak') || input.includes('buy') || input.includes('hello');
+  const wantsMove = input.includes('go') || input.includes('sneak') || input.includes('walk') || input.includes('approach') || input.includes('follow') || input.includes('leave');
   const wantsAttack = input.includes('attack') || input.includes('strike') || input.includes('hit') || input.includes('fight') || input.includes('kill') || input.includes('draw');
   const wantsDefend = input.includes('protect') || input.includes('defend') || input.includes('dodge') || input.includes('hide');
   const wantsHeal = input.includes('second wind') || input.includes('heal') || input.includes('recover');
+  
+  const isWhereAmI = input.includes('where am i');
+  const isWhoAreYou = input.includes('who are you');
+  const isWhyAmIHere = input.includes('why am i here');
+
+  if (isWhereAmI) {
+    return {
+      engineRequests: [],
+      narration: state.sceneId === 'social' 
+        ? 'You are standing in The Brindlehook Inn, a weather-beaten tavern in Greyhaven. Rain drums against the shutters, and wet cloaks steam beside the hearth.' 
+        : 'You are on the muddy banks of the river near the old boathouse.',
+      needsResultBeforeNarrating: false,
+    };
+  }
+  
+  if (isWhoAreYou) {
+    return {
+      engineRequests: [],
+      narration: state.sceneId === 'social' 
+        ? 'Mira looks up from the cup she\'s drying. "I\'m Mira. And you\'re dripping on my floor. What do you want?"' 
+        : '"We\'re the ones who are gonna empty your pockets!" one of the ruffians snarls.',
+      needsResultBeforeNarrating: false,
+    };
+  }
+  
+  if (isWhyAmIHere) {
+    return {
+      engineRequests: [],
+      narration: 'You are a mercenary looking for a missing courier who vanished somewhere along the river road. The trail led you here.',
+      needsResultBeforeNarrating: false,
+    };
+  }
 
   if (state.sceneId === 'social') {
+    if (input.includes('hello')) {
+      return {
+        engineRequests: [],
+        narration: 'Mira nods curtly. "Evening. You look half-drowned. Ale?"',
+        needsResultBeforeNarrating: false,
+      };
+    }
     if (wantsLook) {
       return {
         engineRequests: [],

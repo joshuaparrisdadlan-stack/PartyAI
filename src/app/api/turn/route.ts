@@ -41,9 +41,7 @@ export async function POST(req: Request) {
   });
   saveRecap(sessionId, recap);
 
-  let narration = fallbackUsed
-    ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
-    : turn.response.narration;
+  let narration = turn.response.narration;
 
   if (rawTurn.needsResultBeforeNarrating) {
     const finalNarration = await import('@/lib/llm/provider').then(m => m.generateNarration({

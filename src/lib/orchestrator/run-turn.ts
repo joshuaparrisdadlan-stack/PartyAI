@@ -70,9 +70,6 @@ export function runTurn(
 
   const sceneData = oneShot.scenes[state.sceneId as keyof typeof oneShot.scenes];
   const sceneStarter = state.sceneId !== prevScene ? sceneData?.starter : undefined;
-  const nextChoices = choicesForScene(state.sceneId);
-  const nextHook = state.sceneId === 'ending' ? 'Your tale concludes at Brindlehook Inn.' : 'Choose your next action.';
-
   return {
     state,
     response: {
@@ -83,8 +80,8 @@ export function runTurn(
       sceneId: state.sceneId,
       sceneGoal: sceneData?.goal ?? 'Finish the adventure.',
       sceneStarter,
-      nextChoices,
-      nextHook,
+      nextChoices: [],
+      nextHook: '',
       narration: turn.narration,
       engineResults,
       state: {
@@ -102,17 +99,4 @@ export function runTurn(
       },
     },
   };
-}
-
-function choicesForScene(sceneId: GameState['sceneId']): string[] {
-  switch (sceneId) {
-    case 'social':
-      return ['Question Mira about the courier', 'Offer coin for information', 'Inspect the inn patrons'];
-    case 'exploration':
-      return ['Scout the boathouse approach', 'Search for hidden tracks', 'Call out to lure the ambushers'];
-    case 'combat':
-      return ['Strike the nearest ruffian', 'Use Second Wind', 'Hold position and watch for an opening'];
-    case 'ending':
-      return ['Review your recap', 'Start a fresh run'];
-  }
 }

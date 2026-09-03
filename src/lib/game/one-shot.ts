@@ -4,7 +4,7 @@ export const oneShot = {
     social: {
       id: 'social',
       goal: 'Learn where the missing courier went.',
-      starter: 'Rain taps the windows of Brindlehook Inn. Mira the innkeeper dries a mug and watches you carefully.',
+      starter: 'You push open the heavy oak door of The Brindlehook Inn, bringing a gust of coastal rain with you. The stale air smells of spilled ale and damp wool. A few patrons hunch over their mugs, casting wary glances your way. You are a mercenary, and you are here because a courier carrying something valuable vanished on the river road three days ago. Behind the bar, Mira wipes down the wood with a dirty rag, her eyes locked on you.',
     },
     exploration: {
       id: 'exploration',
