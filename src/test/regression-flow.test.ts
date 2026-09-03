@@ -19,6 +19,10 @@ describe('regression flow', () => {
     state = runTurn(state, deriveDmTurnFromInput(state, 'I inspect the tracks'), { mode: 'table_rules', aiUsed: false, fallbackUsed: true }).state;
     expect(state.sceneId).toBe('combat');
 
+    // trigger combat start
+    state = runTurn(state, deriveDmTurnFromInput(state, 'I approach'), { mode: 'table_rules', aiUsed: false, fallbackUsed: true }).state;
+    expect(state.combat.active).toBe(true);
+
     // two crit attacks (with 2d8+3 on nat20) remove both monsters
     state = runTurn(state, deriveDmTurnFromInput(state, 'I attack'), { mode: 'table_rules', aiUsed: false, fallbackUsed: true }).state;
     state = runTurn(state, deriveDmTurnFromInput(state, 'I attack again'), { mode: 'table_rules', aiUsed: false, fallbackUsed: true }).state;

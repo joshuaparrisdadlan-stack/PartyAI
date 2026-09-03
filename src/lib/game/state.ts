@@ -9,7 +9,7 @@ export function createInitialState(sessionId: string): GameState {
     log: [],
     player: structuredClone(pregenFighter),
     monsters: buildCombatMonsters(),
-    combat: { active: false, initiative: [], turnIndex: 0 },
+    combat: { active: false, initiative: [], turnIndex: 0, round: 1 },
   };
 }
 

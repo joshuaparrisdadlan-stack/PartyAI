@@ -28,7 +28,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
     };
   }
 
-  if (state.sceneId !== 'combat') {
+  if (!state.combat.active && state.sceneId === 'combat') {
     return {
       engineRequests: [{ kind: 'start_combat' }],
       narration: 'Steel flashes in the rain as two ruffians close in.',
@@ -39,7 +39,7 @@ export function deriveDmTurnFromInput(state: GameState, playerInput: string): Dm
   if (input.includes('attack') || input.includes('strike') || input.includes('hit')) {
     const living = state.monsters.find((m) => m.hp > 0);
     return {
-      engineRequests: living ? [{ kind: 'player_attack', targetId: living.id }, { kind: 'monster_turn' }] : [],
+      engineRequests: living ? [{ kind: 'player_attack', targetId: living.id }] : [],
       narration: 'You lunge forward with your blade.',
       needsResultBeforeNarrating: true,
     };
