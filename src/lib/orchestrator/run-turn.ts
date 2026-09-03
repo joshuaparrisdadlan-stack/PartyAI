@@ -17,6 +17,7 @@ export type TurnResult = {
   engineResults: Array<{ kind: string; summary: string; ok: boolean; breakdown?: unknown; critical?: boolean }>;
   state: {
     player: {
+      id: string;
       name: string;
       hp: number;
       maxHp: number;
@@ -50,6 +51,21 @@ export function runTurn(
     const resolved = resolveEngineRequest(state, request);
     state = resolved.state;
     engineResults.push({ kind: request.kind, ...resolved.result });
+    if (!state.combat?.active) break;
+  }
+  
+  // Auto-advance monster turns until it is the player's turn or combat ends
+  while (state.sceneId === 'combat' && state.combat.active) {
+    const currentActor = state.combat.initiative[state.combat.turnIndex];
+    if (!currentActor || currentActor.actorId === state.player.id) {
+      break; // Wait for player input
+    }
+    const resolved = resolveEngineRequest(state, { kind: 'monster_turn' });
+    state = resolved.state;
+    // Don't clutter if they were dead/skipped, but maybe record it if it was an actual turn
+    if (resolved.result.summary !== 'Monster is dead or missing, skipping turn.') {
+      engineResults.push({ kind: 'monster_turn', ...resolved.result });
+    }
   }
 
   const sceneData = oneShot.scenes[state.sceneId as keyof typeof oneShot.scenes];
@@ -73,6 +89,7 @@ export function runTurn(
       engineResults,
       state: {
         player: {
+          id: state.player.id,
           name: state.player.name,
           hp: state.player.hp,
           maxHp: state.player.maxHp,

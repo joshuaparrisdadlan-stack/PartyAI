@@ -120,3 +120,62 @@ function parseTurn(raw: string): DmTurn | null {
     return null;
   }
 }
+
+type NarrationInput = { systemPrompt: string; playerInput: string; engineResults: any[]; priorNarration: string };
+
+export async function generateNarration(input: NarrationInput): Promise<string> {
+  const provider = (process.env.PARTYQUEST_LLM_PROVIDER ?? 'groq').toLowerCase();
+  if (provider === 'openai') return generateNarrationOpenAI(input);
+  const groqRes = await generateNarrationGroq(input);
+  if (groqRes) return groqRes;
+  return generateNarrationOpenAI(input);
+}
+
+async function generateNarrationGroq(input: NarrationInput): Promise<string | null> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile';
+  
+  const systemPrompt = `${input.systemPrompt}\n\nNarrate the outcome of the following engine results. Do not invent mechanical effects. Two to four sentences.`;
+  const userContent = `Player said: "${input.playerInput}"\nDM intent: "${input.priorNarration}"\nEngine results: ${JSON.stringify(input.engineResults, null, 2)}`;
+  
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent }
+      ],
+      temperature: 0.6,
+    }),
+  });
+  if (!r.ok) return null;
+  const data = await r.json() as any;
+  return data.choices?.[0]?.message?.content || null;
+}
+
+async function generateNarrationOpenAI(input: NarrationInput): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return "The DM narrates the result based on the engine outcome."; // fallback
+  const model = process.env.OPENAI_MODEL ?? 'gpt-5.4-mini';
+  
+  const systemPrompt = `${input.systemPrompt}\n\nNarrate the outcome of the following engine results. Do not invent mechanical effects. Two to four sentences.`;
+  const userContent = `Player said: "${input.playerInput}"\nDM intent: "${input.priorNarration}"\nEngine results: ${JSON.stringify(input.engineResults, null, 2)}`;
+
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent }
+      ],
+    }),
+  });
+  if (!r.ok) return "The DM narrates the result based on the engine outcome.";
+  const data = await r.json() as any;
+  return data.choices?.[0]?.message?.content || "The DM narrates the result based on the engine outcome.";
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 type TurnResponse = {
   ok: boolean;
@@ -12,10 +12,11 @@ type TurnResponse = {
   nextChoices: string[];
   nextHook: string;
   narration: string;
-  engineResults: { kind: string; summary: string; ok: boolean }[];
+  engineResults: { kind: string; summary: string; ok: boolean; breakdown?: unknown; critical?: boolean }[];
   state: {
-    player: { name: string; hp: number; maxHp: number; ac: number; features: { id: string; name: string; usesRemaining: number }[] };
+    player: { id: string; name: string; hp: number; maxHp: number; ac: number; features: { id: string; name: string; usesRemaining: number }[] };
     monsters: { id: string; name: string; hp: number; maxHp: number; ac: number }[];
+    combat: { active: boolean; initiative: { actorId: string; roll: number }[]; turnIndex: number; round: number };
     log: string[];
   };
   recap: { turnNumber: number };
@@ -31,6 +32,13 @@ export default function PlayPage() {
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<'ai_director' | 'table_rules'>('table_rules');
   const [choices, setChoices] = useState<string[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [history]);
 
   async function sendTurn() {
     if (!input.trim() || busy) return;
@@ -55,15 +63,28 @@ export default function PlayPage() {
       setChoices(data.nextChoices);
 
       const lines = [
-        ...(data.sceneStarter ? [`Scene shift: ${data.sceneStarter}`] : []),
-        data.narration,
-        ...data.engineResults.map((r) => `• ${r.summary}`),
-        `Recap saved (turn ${data.recap.turnNumber}).`,
-        data.nextHook,
+        `\nDM: ${data.narration}`
       ];
+      
+      for (const r of data.engineResults) {
+        if (r.breakdown) {
+          const bd = r.breakdown as any;
+          const rollStr = `[DICE] ${bd.formula}: rolled [${bd.rolls.join(', ')}] + ${bd.modifier} = ${bd.total}`;
+          lines.push(`🎲 ${rollStr}`);
+          if (r.critical) lines.push(`⭐ CRITICAL HIT!`);
+        }
+        lines.push(`⚙️ ${r.summary}`);
+      }
+
+      if (data.sceneStarter) {
+        lines.push(`\n--- SCENE: ${data.sceneStarter} ---`);
+      }
+
+      lines.push(`\n${data.nextHook}`);
+      
       setHistory((h) => [...h, ...lines]);
     } catch {
-      setHistory((h) => [...h, 'The guide pauses, then resumes. Try that action again.']);
+      setHistory((h) => [...h, '\nDM: The guide pauses, then resumes. Try that action again.']);
     } finally {
       setBusy(false);
     }
@@ -76,7 +97,7 @@ export default function PlayPage() {
         <p className="mt-1 text-sm text-zinc-600">Scene: <b>{sceneId}</b> · Goal: {sceneGoal}</p>
         <p className="mt-1 text-xs text-zinc-500">Mode: {mode === 'ai_director' ? 'AI Director' : 'Table Rules'}</p>
 
-        <div className="mt-4 h-[430px] overflow-y-auto rounded border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950">
+        <div ref={scrollRef} className="mt-4 h-[430px] overflow-y-auto rounded border border-zinc-200 bg-zinc-50 p-3 pb-8 text-sm dark:border-zinc-700 dark:bg-zinc-950 scroll-smooth">
           {history.map((line, i) => <p key={`${line}-${i}`} className="mb-2 whitespace-pre-wrap">{line}</p>)}
         </div>
 
@@ -106,13 +127,40 @@ export default function PlayPage() {
         <h2 className="font-semibold">Character</h2>
         {!state ? <p className="mt-2 text-zinc-600">No turn yet.</p> : (
           <>
-            <p className="mt-2">{state.player.name}</p>
+            <p className="mt-2 font-bold">{state.player.name}</p>
             <p>HP: {state.player.hp}/{state.player.maxHp}</p>
             <p>AC: {state.player.ac}</p>
             <p className="mt-2 font-semibold">Features</p>
             {state.player.features.map((f) => <p key={f.id}>{f.name}: {f.usesRemaining} use(s)</p>)}
-            <p className="mt-3 font-semibold">Enemies</p>
-            {state.monsters.map((m) => <p key={m.id}>{m.name}: {m.hp}/{m.maxHp} HP</p>)}
+            
+            {state.combat?.active ? (
+              <div className="mt-4 rounded bg-zinc-100 p-2 dark:bg-zinc-800">
+                <p className="font-bold">Combat — Round {state.combat.round}</p>
+                <div className="mt-2 flex flex-col gap-1">
+                  {state.combat.initiative.map((init, idx) => {
+                    const isTurn = idx === state.combat.turnIndex;
+                    const name = init.actorId === state.player.id 
+                      ? state.player.name 
+                      : state.monsters.find(m => m.id === init.actorId)?.name || 'Unknown';
+                    const hp = init.actorId === state.player.id
+                      ? state.player.hp
+                      : state.monsters.find(m => m.id === init.actorId)?.hp || 0;
+                    
+                    return (
+                      <div key={init.actorId} className={`flex items-center gap-2 ${isTurn ? 'font-bold text-blue-600 dark:text-blue-400' : hp <= 0 ? 'opacity-50 line-through' : ''}`}>
+                        <span className="w-4">{isTurn ? '→' : ''}</span>
+                        <span>{name} ({init.roll})</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="mt-3 font-semibold">Enemies</p>
+                {state.monsters.map((m) => <p key={m.id}>{m.name}: {m.hp}/{m.maxHp} HP</p>)}
+              </>
+            )}
           </>
         )}
       </aside>

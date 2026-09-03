@@ -41,9 +41,23 @@ export async function POST(req: Request) {
   });
   saveRecap(sessionId, recap);
 
-  const narration = fallbackUsed
+  let narration = fallbackUsed
     ? `The wind shifts and the tale steadies itself. ${turn.response.narration}`
     : turn.response.narration;
+
+  if (rawTurn.needsResultBeforeNarrating) {
+    const finalNarration = await import('@/lib/llm/provider').then(m => m.generateNarration({
+      systemPrompt: buildSystemPrompt(state),
+      playerInput,
+      engineResults: turn.response.engineResults,
+      priorNarration: narration
+    }));
+    if (finalNarration && finalNarration !== "The DM narrates the result based on the engine outcome.") {
+      narration = finalNarration;
+    } else if (fallbackUsed) {
+      narration += `\n[Result]: ${turn.response.engineResults.map(r => r.summary).join(' ')}`;
+    }
+  }
 
   const response = { ...turn.response, narration, sessionId, recap };
 

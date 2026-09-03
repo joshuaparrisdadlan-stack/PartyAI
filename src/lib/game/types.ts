@@ -29,6 +29,7 @@ export type CombatState = {
   active: boolean;
   initiative: { actorId: string; roll: number }[];
   turnIndex: number;
+  round: number;
 };
 
 export type GameState = {
